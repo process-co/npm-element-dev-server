@@ -1,0 +1,85 @@
+{
+  "name": "@process.co/element-dev-server",
+  "version": "0.0.0-development",
+  "description": "Helper Library for developing elements for Process.co",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "process-element-dev": "tsx ./dist/cli.js",
+    "process-element-dev-bundle": "./bundle/index.js"
+  },
+  "files": [
+    "dist/*",
+    "src/*",
+    "bundle/*"
+  ],
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org",
+    "scope": "@process.co"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "scripts": {
+    "build": "rm -rf ./dist && echo '{\"version\":'$(jq '.version' ./package.json)'}' > ./src/version.json && tsc && chmod +x ./dist/cli.js",
+    "dev": "tsx src/cli.tsx",
+    "cli": "tsx src/cli.tsx",
+    "test": "jest",
+    "prepublishOnly": "pnpm build && pnpm bundle && pnpm prepare-bundle",
+    "bundle": "ncc build src/cli.tsx -o bundle -m -a && chmod +x bundle/index.js",
+    "prepare-bundle": "cd bundle && pnpm install --prod"
+  },
+  "keywords": [
+    "process",
+    "element",
+    "cli",
+    "validation",
+    "compatibility"
+  ],
+  "author": {
+    "name": "Process.co Team",
+    "email": "developers@process.co"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "tsx": "^4.19.1",
+    "@process.co/compatibility": "workspace:0.0.0-development",
+    "@process.co/element-types": "workspace:0.0.0-development",
+    "@process.co/elements": "workspace:0.0.0-development",
+    "@process.co/interfaces": "workspace:*",
+    "@repo/utilities": "workspace:^",
+    "@vitejs/plugin-react": "^4.3.4",
+    "axios": "^1.8.4",
+    "ink": "^6.0.1",
+    "ink-select-input": "^6.2.0",
+    "io-ts": "^2.2.22",
+    "meow": "^13.2.0",
+    "querystring": "^0.2.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "type-fest": "^4.21.0",
+    "vite": "^7.0.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-typescript": "^7.26.0",
+    "@repo/config-jest": "workspace:^",
+    "@repo/config-typescript": "workspace:^",
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.13.17",
+    "@types/react": "19.1.0",
+    "@vercel/ncc": "^0.38.1",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.7.3"
+  }
+}

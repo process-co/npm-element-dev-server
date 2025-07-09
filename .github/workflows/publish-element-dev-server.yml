@@ -1,0 +1,71 @@
+name: Publish Element Dev Server
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      registry:
+        description: 'NPM Registry URL'
+        required: false
+        type: string
+        default: 'https://registry.npmjs.org'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: ${{ github.event.inputs.registry || 'https://registry.npmjs.org' }}
+
+      # - name: Install pnpm
+      #   uses: pnpm/action-setup@v2
+      #   with:
+      #     version: 10
+
+      # - name: Install dependencies
+      #   run: pnpm install --no-frozen-lockfile
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+
+      - name: Update version in package.json
+        run: |
+          sed -i 's/"version": "[^"]*"/"version": "${{ steps.get_version.outputs.VERSION }}"/' package.json
+          REGISTRY="${{ github.event.inputs.registry || 'https://registry.npmjs.org' }}"
+          jq --arg reg "$REGISTRY" '.publishConfig.registry = $reg | .registry = $reg' package.json > package.json.tmp && mv package.json.tmp package.json
+          jq '.publishConfig.access = "public"' package.json > package.json.tmp && mv package.json.tmp package.json
+
+      - name: Verify package structure
+        run: |
+          echo "Checking package structure..."
+          [ -d "dist" ] || (echo "Error: dist directory missing!" && exit 1)
+          [ -f "dist/cli.js" ] || (echo "Error: dist/cli.js missing!" && exit 1)
+          [ -f "dist/cli.d.ts" ] || (echo "Error: dist/cli.d.ts missing!" && exit 1)
+          echo "dist/cli.js and dist/cli.d.ts found."
+          echo "Final package.json:"
+          cat package.json
+
+      - name: Publish to npm
+        run: npm publish --access=public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_REGISTRY: ${{ github.event.inputs.registry || 'https://registry.npmjs.org' }} 
