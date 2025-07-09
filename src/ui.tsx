@@ -7,7 +7,7 @@ import path from 'path';
 import { createServer } from 'vite';
 import { fileURLToPath } from 'url';
 import { loadElementPointers, autoDetectElement } from '@process.co/compatibility';
-import { IProcessDefinitionUIInfo, importFolderModulesOfType } from '@process.co/elements';
+import { type IProcessDefinitionUIInfo, importFolderModulesOfType } from '@process.co/elements';
 
 interface ElementItem {
   label: string;
