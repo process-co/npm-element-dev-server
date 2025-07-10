@@ -9,8 +9,7 @@
     ".": "./dist/index.js"
   },
   "bin": {
-    "process-element-dev": "tsx ./dist/cli.js",
-    "process-element-dev-bundle": "./bundle/index.js"
+    "proc-dev": "tsx ./dist/cli.js"
   },
   "files": [
     "dist/*",
@@ -50,11 +49,7 @@
   "license": "ISC",
   "dependencies": {
     "tsx": "^4.19.1",
-    "@process.co/compatibility": "workspace:0.0.0-development",
-    "@process.co/element-types": "workspace:0.0.0-development",
-    "@process.co/elements": "workspace:0.0.0-development",
-    "@process.co/interfaces": "workspace:*",
-    "@repo/utilities": "workspace:^",
+    "@process.co/element-dev-support": "workspace:0.0.0-development",
     "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.8.4",
     "ink": "^6.0.1",

@@ -6,8 +6,8 @@ import fs from 'fs';
 import path from 'path';
 import { createServer } from 'vite';
 import { fileURLToPath } from 'url';
-import { loadElementPointers, autoDetectElement } from '@process.co/compatibility';
-import { type IProcessDefinitionUIInfo, importFolderModulesOfType } from '@process.co/elements';
+import dev_support from '@process.co/element-dev-support';
+import { type IProcessDefinitionUIInfo } from '@process.co/element-dev-support';
 
 interface ElementItem {
   label: string;
@@ -69,7 +69,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
       }
 
       // Get all modules of the specific type to find the one with matching key
-      const modules = await importFolderModulesOfType(folderName, type, elementDir, ['common']);
+      const modules = await dev_support.importFolderModulesOfType(folderName, type, elementDir, ['common']);
 
       const targetModule = modules.find(module => module.key === actionSignalKey);
 
@@ -108,8 +108,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
           if (fs.existsSync(filePath)) {
             // Import this file to check if it's the right module
             try {
-              const { importFromPath } = await import('@process.co/elements');
-              const { module } = await importFromPath(filePath);
+              const { module } = await dev_support.importFromPath(filePath);
 
               // Check if this module has the right key
               if (module.key === actionSignalKey) {
@@ -148,9 +147,9 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
       try {
         // First, check if the target directory itself is a valid element
         try {
-          const elementType = await autoDetectElement(rootDir);
+          const elementType = await dev_support.autoDetectElement(rootDir);
           if (elementType !== 'pipedream') { // If it's a valid element type
-            const elementInfo = await loadElementPointers(rootDir, elementType);
+            const elementInfo = await dev_support.loadElementPointers(rootDir, elementType);
             setElements([{
               label: `${elementInfo.name} (${elementInfo.elementType})`,
               value: elementInfo.name,
@@ -203,7 +202,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
 
         for (const elementPath of potentialElements) {
           try {
-            const elementInfo = await loadElementPointers(elementPath, 'auto');
+            const elementInfo = await dev_support.loadElementPointers(elementPath, 'auto');
             loadedElements.push({
               label: `${elementInfo.name} (${elementInfo.elementType})`,
               value: elementInfo.name,
@@ -280,7 +279,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
     }
 
     // Load the complete element data from compatibility module
-    const elementModule = await loadElementPointers(element.path, 'auto');
+    const elementModule = await dev_support.loadElementPointers(element.path, 'auto');
     const currentActionSignal = (elementModule.actions as any[])?.find(action => action.key === actionSignal.value) ||
       (elementModule.signals as any[])?.find(signal => signal.key === actionSignal.value);
 
@@ -376,7 +375,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
 
       try {
         // Load the element to get its actions and signals
-        const elementModule = await loadElementPointers(element.path, 'auto');
+        const elementModule = await dev_support.loadElementPointers(element.path, 'auto');
 
         const items: ActionSignalItem[] = [];
 
@@ -433,7 +432,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
 
       try {
         // Load the element to get its properties
-        const elementModule = await loadElementPointers(selectedElement.path, 'auto');
+        const elementModule = await dev_support.loadElementPointers(selectedElement.path, 'auto');
 
         const currentActionSignal = (elementModule.actions as any[])?.find(action => action.key === selectedActionSignal.value) ||
           (elementModule.signals as any[])?.find(signal => signal.key === selectedActionSignal.value);

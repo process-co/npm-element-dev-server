@@ -7,8 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { createServer } from 'vite';
 import { fileURLToPath } from 'url';
-import { loadElementPointers, autoDetectElement } from '@process.co/compatibility';
-import { importFolderModulesOfType } from '@process.co/elements';
+import dev_support from '@process.co/element-dev-support';
 export const DevUI = ({ rootDir }) => {
     const [elements, setElements] = useState([]);
     const [selectedElement, setSelectedElement] = useState(null);
@@ -40,7 +39,7 @@ export const DevUI = ({ rootDir }) => {
                 return null;
             }
             // Get all modules of the specific type to find the one with matching key
-            const modules = await importFolderModulesOfType(folderName, type, elementDir, ['common']);
+            const modules = await dev_support.importFolderModulesOfType(folderName, type, elementDir, ['common']);
             const targetModule = modules.find(module => module.key === actionSignalKey);
             if (!targetModule) {
                 return null;
@@ -72,8 +71,7 @@ export const DevUI = ({ rootDir }) => {
                     if (fs.existsSync(filePath)) {
                         // Import this file to check if it's the right module
                         try {
-                            const { importFromPath } = await import('@process.co/elements');
-                            const { module } = await importFromPath(filePath);
+                            const { module } = await dev_support.importFromPath(filePath);
                             // Check if this module has the right key
                             if (module.key === actionSignalKey) {
                                 modulePath = filePath;
@@ -109,9 +107,9 @@ export const DevUI = ({ rootDir }) => {
             try {
                 // First, check if the target directory itself is a valid element
                 try {
-                    const elementType = await autoDetectElement(rootDir);
+                    const elementType = await dev_support.autoDetectElement(rootDir);
                     if (elementType !== 'pipedream') { // If it's a valid element type
-                        const elementInfo = await loadElementPointers(rootDir, elementType);
+                        const elementInfo = await dev_support.loadElementPointers(rootDir, elementType);
                         setElements([{
                                 label: `${elementInfo.name} (${elementInfo.elementType})`,
                                 value: elementInfo.name,
@@ -158,7 +156,7 @@ export const DevUI = ({ rootDir }) => {
                 const loadedElements = [];
                 for (const elementPath of potentialElements) {
                     try {
-                        const elementInfo = await loadElementPointers(elementPath, 'auto');
+                        const elementInfo = await dev_support.loadElementPointers(elementPath, 'auto');
                         loadedElements.push({
                             label: `${elementInfo.name} (${elementInfo.elementType})`,
                             value: elementInfo.name,
@@ -226,7 +224,7 @@ export const DevUI = ({ rootDir }) => {
             configToUse = userViteConfigTs;
         }
         // Load the complete element data from compatibility module
-        const elementModule = await loadElementPointers(element.path, 'auto');
+        const elementModule = await dev_support.loadElementPointers(element.path, 'auto');
         const currentActionSignal = elementModule.actions?.find(action => action.key === actionSignal.value) ||
             elementModule.signals?.find(signal => signal.key === actionSignal.value);
         // Set process.env variables for Vite config
@@ -311,7 +309,7 @@ export const DevUI = ({ rootDir }) => {
             setStatus('loading-actions-signals');
             try {
                 // Load the element to get its actions and signals
-                const elementModule = await loadElementPointers(element.path, 'auto');
+                const elementModule = await dev_support.loadElementPointers(element.path, 'auto');
                 const items = [];
                 // Add actions
                 if (elementModule.actions && Array.isArray(elementModule.actions)) {
@@ -364,7 +362,7 @@ export const DevUI = ({ rootDir }) => {
             setStatus('loading-properties');
             try {
                 // Load the element to get its properties
-                const elementModule = await loadElementPointers(selectedElement.path, 'auto');
+                const elementModule = await dev_support.loadElementPointers(selectedElement.path, 'auto');
                 const currentActionSignal = elementModule.actions?.find(action => action.key === selectedActionSignal.value) ||
                     elementModule.signals?.find(signal => signal.key === selectedActionSignal.value);
                 // Check if the action/signal has its own UI
