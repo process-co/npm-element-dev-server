@@ -9,13 +9,13 @@
     ".": "./dist/index.js"
   },
   "bin": {
-    "proc-dev": ".bin/proc-dev"
+    "proc-dev": "./bin/proc-dev"
   },
   "files": [
     "dist/*",
     "src/*",
     ".process/*",
-    ".bin/*"
+    "bin/*"
   ],
   "publishConfig": {
     "access": "restricted",
