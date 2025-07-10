@@ -59,8 +59,9 @@ jobs:
           echo "Checking package structure..."
           [ -d "dist" ] || (echo "Error: dist directory missing!" && exit 1)
           [ -f "dist/cli.js" ] || (echo "Error: dist/cli.js missing!" && exit 1)
-          [ -f "dist/cli.d.ts" ] || (echo "Error: dist/cli.d.ts missing!" && exit 1)
-          echo "dist/cli.js and dist/cli.d.ts found."
+          [ -f "dist/ui.js" ] || (echo "Error: dist/ui.js missing!" && exit 1)
+          [ -f "dist/logo.js" ] || (echo "Error: dist/logo.js missing!" && exit 1)
+          echo "dist/cli.js, dist/ui.js, and dist/logo.js found."
           echo "Final package.json:"
           cat package.json
 
