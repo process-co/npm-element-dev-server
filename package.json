@@ -14,7 +14,7 @@
   "files": [
     "dist/*",
     "src/*",
-    "bundle/*"
+    ".process/*"
   ],
   "publishConfig": {
     "access": "restricted",

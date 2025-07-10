@@ -65,6 +65,8 @@ jobs:
           echo "Final package.json:"
           cat package.json
 
+          chmod +x dist/cli.js
+
       - name: Publish to npm
         run: npm publish --access=public --no-git-checks
         env:
