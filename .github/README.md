@@ -8,22 +8,31 @@
 Element Development Test Harness for defining Process.co Element UI's.
 
 
-
-
 > [!IMPORTANT] 
 > CHANGES HERE WILL GET OVERWRITTEN<br/>
 > 
 > The JS code in this repo is published from an internal mono repo. The publish process bundles the specific parts of our select internal libararies that may be needed at build time. This repo only represents the public parts of the code that are published to NPM.
 
+## Installation
+
+```bash
+
+npm i @process.co/element-dev-server -g
+
+```
 
 ## Usage
 
-```typescript
+The CLI accepts an optional path argument to specify which directory to scan for Process.co element modules:
 
-//// TODO:
+or you can run from within your element's directory or one directory above run the following command
 
+```bash
+
+proc-dev
 
 ```
+
 
 ## License
 

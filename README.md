@@ -5,24 +5,23 @@ A CLI tool for developing Process.co elements with an interactive development se
 ## Installation
 
 ```bash
-pnpm install
-pnpm build
+
+npm i @process.co/element-dev-server -g
+
 ```
 
 ## Usage
 
 The CLI accepts an optional path argument to specify which directory to scan for Process.co element modules:
 
+or you can run from within your element's directory or one directory above run the following command
+
 ```bash
-# Use current directory
-process-element
 
-# Use a specific path
-process-element /path/to/your/elements
+proc-dev
 
-# Use relative path
-process-element ../my-elements
 ```
+
 
 ## Features
 
