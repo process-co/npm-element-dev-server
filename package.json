@@ -30,8 +30,7 @@
     "build": "rm -rf ./dist && echo '{\"version\":'$(jq '.version' ./package.json)'}' > ./src/version.json && tsup && chmod +x ./dist/cli.js",
     "dev": "tsx src/cli.tsx",
     "cli": "tsx dist/cli.js",
-    "test": "jest",
-    "prepublishOnly": "pnpm build && pnpm bundle && pnpm prepare-bundle"
+    "test": "jest"
   },
   "keywords": [
     "process",
