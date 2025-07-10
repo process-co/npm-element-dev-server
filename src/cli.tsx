@@ -14,7 +14,7 @@ const cli = meow(`
   Usage
     $ process-element [path]
 
-  Options
+  Options 
     --help     Show help
     --version  Show version
 

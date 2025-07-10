@@ -6,13 +6,12 @@ import fs from 'fs';
 import path from 'path';
 import { createServer } from 'vite';
 import { fileURLToPath } from 'url';
-import dev_support from '@process.co/element-dev-support';
-import { type IProcessDefinitionUIInfo } from '@process.co/element-dev-support';
+import dev_support from '@process.co/element-dev-support/dist/index.js';
 
 interface ElementItem {
   label: string;
   value: string;
-  info: IProcessDefinitionUIInfo;
+  info: dev_support.IProcessDefinitionUIInfo;
   path: string;
 }
 

@@ -27,13 +27,11 @@
     ]
   },
   "scripts": {
-    "build": "rm -rf ./dist && echo '{\"version\":'$(jq '.version' ./package.json)'}' > ./src/version.json && tsc && chmod +x ./dist/cli.js",
+    "build": "rm -rf ./dist && echo '{\"version\":'$(jq '.version' ./package.json)'}' > ./src/version.json && tsup && chmod +x ./dist/cli.js",
     "dev": "tsx src/cli.tsx",
-    "cli": "tsx src/cli.tsx",
+    "cli": "tsx dist/cli.js",
     "test": "jest",
-    "prepublishOnly": "pnpm build && pnpm bundle && pnpm prepare-bundle",
-    "bundle": "ncc build src/cli.tsx -o bundle -m -a && chmod +x bundle/index.js",
-    "prepare-bundle": "cd bundle && pnpm install --prod"
+    "prepublishOnly": "pnpm build && pnpm bundle && pnpm prepare-bundle"
   },
   "keywords": [
     "process",
@@ -48,8 +46,7 @@
   },
   "license": "ISC",
   "dependencies": {
-    "tsx": "^4.19.1",
-    "@process.co/element-dev-support": "workspace:0.0.0-development",
+    "@process.co/element-dev-support": "github:process-co/npm-element-dev-support#main",
     "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.8.4",
     "ink": "^6.0.1",
@@ -59,6 +56,8 @@
     "querystring": "^0.2.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.1",
     "type-fest": "^4.21.0",
     "vite": "^7.0.2"
   },
