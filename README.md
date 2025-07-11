@@ -87,13 +87,13 @@ The CLI provides clear error messages for common issues:
 
 ```bash
 # From a project root with element modules
-process-element
+proc-dev
 
 # From anywhere, pointing to a specific project
-process-element ~/projects/my-process-app
+proc-dev ~/projects/my-process-app
 
 # Using relative paths
-process-element ./elements
+proc-dev ./elements
 ```
 
 ## Element Discovery
