@@ -270,7 +270,7 @@ module.exports = defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: ['react', 'react-dom', 'clsx', 'tailwind-merge', 'zustand', '@monaco-editor/react', '@fortawesome/react-fontawesome', '@fortawesome/pro-regular-svg-icons', '@fortawesome/pro-solid-svg-icons', '@fortawesome/pro-duotone-svg-icons', '@fortawesome/pro-light-svg-icons', '@fortawesome/pro-thin-svg-icons', '@fortawesome/pro-bold-svg-icons', '@fortawesome/pro-black-svg-icons', '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-separator', '@radix-ui/react-tooltip', '@radix-ui/react-popover', '@radix-ui/react-accordion', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-slider', '@radix-ui/react-switch','@fortawesome/pro-regular-svg-icons']
   },
   // Environment variables will be passed programmatically
 });
