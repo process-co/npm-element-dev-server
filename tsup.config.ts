@@ -7,8 +7,8 @@ export default defineConfig({
   minify: true,
   target: 'node20',
   bundle: true,
-  // external: [], // ← disables all externals (bundles everything)
-  //  // Optional but recommended in monorepos:
+  // Only bundle the core element packages that define types and compatibility
+  // Let the consuming project provide UI libraries and their dependencies
   noExternal: ['@process.co/element-types', '@process.co/elements', '@process.co/compatibility'],
-
+  
 })
