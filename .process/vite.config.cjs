@@ -4,6 +4,35 @@ const { defineConfig } = require('vite');
 const react = require('@vitejs/plugin-react');
 const path = require('path');
 const fs = require('fs');
+
+// Find where element-dev-server is installed
+// This could be in the user's node_modules or in a monorepo
+const elementDevServerRoot = path.resolve(__dirname, '..');
+
+// Function to find node_modules that contains our dependencies
+function findNodeModulesWithDeps() {
+  const possiblePaths = [
+    // In the element-dev-server package itself
+    path.join(elementDevServerRoot, 'node_modules'),
+    // One level up (for pnpm hoisting in user's project)
+    path.join(elementDevServerRoot, '..', '..'),
+    // Two levels up (for npm/yarn in user's project)
+    path.join(elementDevServerRoot, '..', '..', '..'),
+  ];
+  
+  for (const basePath of possiblePaths) {
+    const testPath = path.join(basePath, '@radix-ui', 'react-slot');
+    if (fs.existsSync(testPath)) {
+      return basePath;
+    }
+  }
+  
+  // Default to element-dev-server's node_modules
+  return path.join(elementDevServerRoot, 'node_modules');
+}
+
+const depsNodeModules = findNodeModulesWithDeps();
+console.log('🔍 Resolving UI dependencies from:', depsNodeModules);
  
 // Access environment variables passed from CLI
 const elementPath = process.env.VITE_ELEMENT_PATH;
@@ -238,8 +267,14 @@ module.exports = defineConfig({
     open: true,
     host: true,
     fs: {
-      // Allow serving files from outside the root
-      allow: ['..']
+      // Allow serving files from outside the root, including our deps node_modules
+      allow: [
+        '..',
+        elementDevServerRoot,
+        depsNodeModules,
+        // Allow the user's element directory
+        ...(elementPath ? [elementPath, path.dirname(elementPath)] : [])
+      ]
     },
     watch: {
       // Watch external directories for changes
@@ -267,10 +302,21 @@ module.exports = defineConfig({
           'ui'
         )
       })
-    }
+    },
+    // Resolve modules from the element-dev-server's node_modules
+    // This allows the dev server to provide all dependencies
+    preserveSymlinks: false,
   },
+  // Tell Vite where to find dependencies - use the discovered node_modules
+  cacheDir: path.join(depsNodeModules, '.vite'),
   optimizeDeps: {
-    include: ['react', 'react-dom', 'clsx', 'tailwind-merge', 'zustand', '@monaco-editor/react', '@fortawesome/react-fontawesome', '@fortawesome/pro-regular-svg-icons', '@fortawesome/pro-solid-svg-icons', '@fortawesome/pro-duotone-svg-icons', '@fortawesome/pro-light-svg-icons', '@fortawesome/pro-thin-svg-icons', '@fortawesome/pro-bold-svg-icons', '@fortawesome/pro-black-svg-icons', '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-separator', '@radix-ui/react-tooltip', '@radix-ui/react-popover', '@radix-ui/react-accordion', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-slider', '@radix-ui/react-switch','@fortawesome/pro-regular-svg-icons']
+    include: ['react', 'react-dom', 'clsx', 'tailwind-merge', 'zustand', '@monaco-editor/react', '@fortawesome/react-fontawesome', '@fortawesome/pro-regular-svg-icons', '@fortawesome/pro-solid-svg-icons', '@fortawesome/pro-duotone-svg-icons', '@fortawesome/pro-light-svg-icons', '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-separator', '@radix-ui/react-tooltip', '@radix-ui/react-popover', '@radix-ui/react-accordion', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-slider', '@radix-ui/react-switch'],
+    // Force Vite to look in element-dev-server's node_modules for these deps
+    esbuildOptions: {
+      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs'],
+      // Use the discovered node_modules path
+      nodePaths: [depsNodeModules]
+    }
   },
   // Environment variables will be passed programmatically
 });
