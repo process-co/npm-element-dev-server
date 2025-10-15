@@ -9,6 +9,25 @@ const fs = require('fs');
 // This could be in the user's node_modules or in a monorepo
 const elementDevServerRoot = path.resolve(__dirname, '..');
 
+// Debug mode - set PROC_DEV_DEBUG=true to see detailed logging
+const DEBUG = process.env.PROC_DEV_DEBUG === 'true';
+
+// Find the local @process.co/ui source for development (monorepo override)
+const localUISource = path.resolve(elementDevServerRoot, '..', 'ui', 'src');
+const localUIPackageRoot = path.resolve(elementDevServerRoot, '..', 'ui');
+const localUIBuiltCSS = path.resolve(localUIPackageRoot, 'dist', 'ui.css');
+const hasLocalUISource = fs.existsSync(localUISource);
+if (DEBUG) {
+  if (hasLocalUISource) {
+    console.log('🎨 Using local @process.co/ui source from monorepo');
+    console.log('   Source:', localUISource);
+    console.log('   CSS:', localUIBuiltCSS);
+    console.log('   CSS exists?', fs.existsSync(localUIBuiltCSS));
+  } else {
+    console.log('📦 Using published @process.co/ui from npm');
+  }
+}
+
 // Function to find node_modules that contains our dependencies
 function findNodeModulesWithDeps() {
   const possiblePaths = [
@@ -32,7 +51,7 @@ function findNodeModulesWithDeps() {
 }
 
 const depsNodeModules = findNodeModulesWithDeps();
-console.log('🔍 Resolving UI dependencies from:', depsNodeModules);
+if (DEBUG) console.log('🔍 Resolving UI dependencies from:', depsNodeModules);
  
 // Access environment variables passed from CLI
 const elementPath = process.env.VITE_ELEMENT_PATH;
@@ -57,11 +76,93 @@ const propertyUIPath = process.env.VITE_PROPERTY_UI_PATH;
 // console.log('Vite config index.html path:', path.resolve(__dirname, 'index.html'));
 // console.log('Vite config index.tsx path:', path.resolve(__dirname, 'index.tsx'));
 
-module.exports = defineConfig({
-  plugins: [
-    react(),
-    {
-      name: 'element-virtual-modules',
+// Build plugins array
+const plugins = [react()];
+
+// Add CSS resolver if in monorepo
+if (hasLocalUISource) {
+  if (DEBUG) console.log('🔧 Adding ui-css-resolver plugin');
+  plugins.push({
+    name: 'ui-css-resolver',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (DEBUG) console.log('🔍 ui-css-resolver checking:', source);
+      if (source === '@process.co/ui/styles') {
+        if (DEBUG) console.log('✅ Resolving @process.co/ui/styles to:', localUIBuiltCSS);
+        return localUIBuiltCSS;
+      }
+      return null;
+    }
+  });
+  if (DEBUG) console.log('✅ ui-css-resolver plugin added, total plugins:', plugins.length);
+}
+
+// Add UI package alias resolver if in monorepo
+if (hasLocalUISource) {
+  plugins.push({
+      name: 'ui-package-alias-resolver',
+      enforce: 'pre',
+      resolveId(source, importer) {
+        // Only process @/ imports
+        if (!source.startsWith('@/')) return null;
+        
+        // Only process if importer is from the UI source
+        if (!importer) return null;
+        
+        // Convert importer to absolute path if it's relative
+        let absoluteImporter = importer;
+        if (!path.isAbsolute(importer)) {
+          // If it's a relative path like "../../ui/src/...", resolve it from the .process directory
+          // __dirname is the .process directory where this config file lives
+          absoluteImporter = path.resolve(__dirname, importer);
+        }
+        
+        const normalizedImporter = path.normalize(absoluteImporter);
+        const normalizedUISource = path.normalize(localUISource);
+        
+        // Check if the importer is from the UI source
+        if (!normalizedImporter.includes(normalizedUISource)) return null;
+        
+        const relativePath = source.substring(2); // Remove '@/'
+        const resolvedPath = path.join(localUISource, relativePath);
+        
+        // Try common extensions
+        const extensions = ['.ts', '.tsx', '.js', '.jsx'];
+        for (const ext of extensions) {
+          const testPath = resolvedPath + ext;
+          if (fs.existsSync(testPath)) {
+            const stats = fs.statSync(testPath);
+            if (stats.isFile()) {
+              return testPath;
+            }
+          }
+        }
+        
+        // Try without extension (might already have one)
+        if (fs.existsSync(resolvedPath)) {
+          const stats = fs.statSync(resolvedPath);
+          if (stats.isFile()) {
+            return resolvedPath;
+          }
+          
+          // It's a directory, try index files
+          if (stats.isDirectory()) {
+            for (const indexFile of ['index.ts', 'index.tsx', 'index.js', 'index.jsx']) {
+              const indexPath = path.join(resolvedPath, indexFile);
+              if (fs.existsSync(indexPath)) {
+                return indexPath;
+              }
+            }
+          }
+        }
+        
+        return null;
+      }
+    });
+}
+
+plugins.push({
+  name: 'element-virtual-modules',
       resolveId(source) {
         // Main element module
         if (source === '/element-main') {
@@ -106,9 +207,10 @@ module.exports = defineConfig({
         }
         return null;
       }
-    },
-    {
-      name: 'external-element-loader',
+    });
+
+plugins.push({
+  name: 'external-element-loader',
 
       configureServer(server) {
         // Set up file watching for the element directory
@@ -139,6 +241,76 @@ module.exports = defineConfig({
                 path: file,
                 timestamp: Date.now()
               });
+            }
+          });
+        }
+        
+        // Also watch the local @process.co/ui source for hot reloading
+        if (hasLocalUISource) {
+          if (DEBUG) console.log(`🔍 Setting up file watching for @process.co/ui source: ${localUISource}`);
+          server.watcher.add(localUISource);
+          
+          // Watch CSS source files and trigger rebuild
+          const cssSourceFiles = [
+            path.join(localUISource, 'styles'),
+            path.join(localUISource, 'themes')
+          ];
+          cssSourceFiles.forEach(dir => {
+            if (fs.existsSync(dir)) {
+              server.watcher.add(dir);
+            }
+          });
+          
+          let cssRebuildTimeout = null;
+          
+          server.watcher.on('change', (file) => {
+            if (file.startsWith(localUISource)) {
+              if (DEBUG) console.log(`🎨 @process.co/ui source file changed: ${file}`);
+              
+              // Check if it's a CSS-related file
+              const isCSSFile = file.includes('/styles/') || file.includes('/themes/') || file.endsWith('.css');
+              
+              if (isCSSFile) {
+                console.log(`🎨 CSS source changed, rebuilding...`);
+                
+                // Debounce CSS rebuilds
+                clearTimeout(cssRebuildTimeout);
+                cssRebuildTimeout = setTimeout(async () => {
+                  try {
+                    const { exec } = require('child_process');
+                    const { promisify } = require('util');
+                    const execAsync = promisify(exec);
+                    
+                    if (DEBUG) console.log('📦 Rebuilding CSS...');
+                    await execAsync('pnpm run generate:css', { cwd: localUIPackageRoot });
+                    console.log('✅ CSS rebuilt');
+                    
+                    // Invalidate the CSS module and trigger full reload
+                    const cssModule = server.moduleGraph.getModuleById(localUIBuiltCSS);
+                    if (cssModule) {
+                      server.moduleGraph.invalidateModule(cssModule);
+                    }
+                    
+                    server.ws.send({
+                      type: 'full-reload',
+                      path: '*'
+                    });
+                  } catch (error) {
+                    console.error('❌ Failed to rebuild CSS:', error.message);
+                  }
+                }, 500);
+              } else {
+                // For non-CSS files, just trigger HMR
+                const module = server.moduleGraph.getModuleById(file);
+                if (module) {
+                  server.moduleGraph.invalidateModule(module);
+                }
+                
+                server.ws.send({
+                  type: 'full-reload',
+                  path: '*'
+                });
+              }
             }
           });
         }
@@ -259,8 +431,10 @@ module.exports = defineConfig({
         
         return ctx.modules;
       }
-    }
-  ],
+    });
+
+module.exports = defineConfig({
+  plugins,
   // root is set programmatically in the CLI
   server: {
     port: 5173,
@@ -273,7 +447,9 @@ module.exports = defineConfig({
         elementDevServerRoot,
         depsNodeModules,
         // Allow the user's element directory
-        ...(elementPath ? [elementPath, path.dirname(elementPath)] : [])
+        ...(elementPath ? [elementPath, path.dirname(elementPath)] : []),
+        // Allow the local @process.co/ui source for hot reloading
+        ...(hasLocalUISource ? [localUISource, path.dirname(localUISource)] : [])
       ]
     },
     watch: {
@@ -292,6 +468,13 @@ module.exports = defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(process.cwd(), 'src'),
+      // Override @process.co/ui with local monorepo source in dev mode
+      // ORDER MATTERS: More specific paths must come BEFORE more general ones!
+      ...(hasLocalUISource && {
+        // Put /styles FIRST so it matches before the general @process.co/ui
+        '@process.co/ui/styles': localUIBuiltCSS,
+        '@process.co/ui': localUISource
+      }),
       // Dynamically map element paths based on the elementPath from CLI
       ...(elementPath && {
         // Map the element directory to a virtual path that Vite can resolve
@@ -311,6 +494,11 @@ module.exports = defineConfig({
   cacheDir: path.join(depsNodeModules, '.vite'),
   optimizeDeps: {
     include: ['react', 'react-dom', 'clsx', 'tailwind-merge', 'zustand', '@monaco-editor/react', '@fortawesome/react-fontawesome', '@fortawesome/pro-regular-svg-icons', '@fortawesome/pro-solid-svg-icons', '@fortawesome/pro-duotone-svg-icons', '@fortawesome/pro-light-svg-icons', '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-separator', '@radix-ui/react-tooltip', '@radix-ui/react-popover', '@radix-ui/react-accordion', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-slider', '@radix-ui/react-switch'],
+    // Exclude local UI source and external elements from optimization for hot reloading
+    exclude: [
+      ...(hasLocalUISource ? ['@process.co/ui'] : []),
+      ...(elementPath ? [elementPath] : [])
+    ],
     // Force Vite to look in element-dev-server's node_modules for these deps
     esbuildOptions: {
       resolveExtensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs'],

@@ -49,6 +49,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
   const [viteUrl, setViteUrl] = useState<string | null>(null);
   // Add a serverMessage state for display messages
   const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [usingLocalUI, setUsingLocalUI] = useState<boolean>(false);
 
   // Function to get the actual module path for an action/signal
   const getModulePath = async (elementPath: string, actionSignalKey: string, type: 'action' | 'signal'): Promise<{ modulePath: string; uiDir: string } | null> => {
@@ -282,6 +283,33 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
     const currentActionSignal = (elementModule.actions as any[])?.find(action => action.key === actionSignal.value) ||
       (elementModule.signals as any[])?.find(signal => signal.key === actionSignal.value);
 
+    // Check if we're in monorepo with local UI source (from Node.js context)
+    // Try multiple possible paths to find the UI source
+    const possibleUIPaths = [
+      path.resolve(process.cwd(), 'process-co', 'ui', 'src'),
+      path.resolve(__dirname, '..', '..', 'ui', 'src'),
+      path.resolve(__dirname, '..', 'ui', 'src'),
+    ];
+    
+    console.log('🔍 Checking for local UI source...');
+    console.log('   process.cwd():', process.cwd());
+    console.log('   __dirname:', __dirname);
+    
+    let hasLocalUISource = false;
+    for (const uiPath of possibleUIPaths) {
+      console.log('   Checking path:', uiPath, 'exists:', fs.existsSync(uiPath));
+      if (fs.existsSync(uiPath)) {
+        hasLocalUISource = true;
+        console.log('   ✅ Found local UI source at:', uiPath);
+        break;
+      }
+    }
+    
+    console.log('   hasLocalUISource:', hasLocalUISource);
+    
+    // Update state to show in banner
+    setUsingLocalUI(hasLocalUISource);
+    
     // Set process.env variables for Vite config
     process.env.VITE_ELEMENT_PATH = element.path;
     process.env.VITE_ELEMENT_TYPE = actionSignal.type;
@@ -292,6 +320,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
     process.env.VITE_PROPERTY_UI_PATH = property?.uiPath || '';
     process.env.VITE_MODULE_PATH = moduleInfo.modulePath;
     process.env.VITE_UI_DIRECTORY = moduleInfo.uiDir;
+    process.env.VITE_HAS_LOCAL_UI_SOURCE = hasLocalUISource ? 'true' : 'false';
 
 
     const viteLogLength = 1;
@@ -319,13 +348,25 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
           // Pass the complete element data from compatibility module
           'import.meta.env.VITE_ELEMENT_MODULE': JSON.stringify(elementModule),
           'import.meta.env.VITE_CURRENT_ACTION_SIGNAL': JSON.stringify(currentActionSignal),
-          'import.meta.env.VITE_SELECTED_PROPERTY': JSON.stringify(property)
+          'import.meta.env.VITE_SELECTED_PROPERTY': JSON.stringify(property),
+          'import.meta.env.VITE_HAS_LOCAL_UI_SOURCE': JSON.stringify(hasLocalUISource)
         },
         logLevel: 'info',
         customLogger: {
-          info(msg) { viteLogsRef.current(logs => [...logs, msg].slice(-viteLogLength)); },
-          warn(msg) { viteLogsRef.current(logs => [...logs, `[warn] ${msg}`].slice(-viteLogLength)); },
-          error(msg) { viteLogsRef.current(logs => [...logs, `[error] ${msg}`].slice(-viteLogLength)); },
+          info(msg) { 
+            // Only capture in UI, don't output to console (prevents HMR noise)
+            viteLogsRef.current(logs => [...logs, msg].slice(-viteLogLength)); 
+          },
+          warn(msg) { 
+            // Show warnings in console
+            console.warn(`[warn] ${msg}`);
+            viteLogsRef.current(logs => [...logs, `[warn] ${msg}`].slice(-viteLogLength)); 
+          },
+          error(msg) { 
+            // Show errors in console
+            console.error(`[error] ${msg}`);
+            viteLogsRef.current(logs => [...logs, `[error] ${msg}`].slice(-viteLogLength)); 
+          },
           clearScreen() { },
           hasWarned: false,
           warnOnce(msg) { },
@@ -574,6 +615,7 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
           ) : (
             <Text>UI Mode: <Text color="#01D4E7">Action/Signal Level</Text></Text>
           )}
+          {usingLocalUI && <Text>UI Source: <Text color="#8759F2">Local Monorepo (Hot Reload Enabled)</Text></Text>}
           <Text color="yellow">Press Ctrl+C to stop the server</Text>
         </Box>
         <Box marginTop={1} marginLeft={4} flexDirection="column">
