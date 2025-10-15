@@ -11,6 +11,9 @@ interface ImportMetaEnv {
   readonly VITE_PROPERTY_UI_PATH?: string;
   readonly VITE_MODULE_PATH?: string;
   readonly VITE_UI_DIRECTORY?: string;
+  readonly VITE_ELEMENT_MODULE?: string;
+  readonly VITE_CURRENT_ACTION_SIGNAL?: string;
+  readonly VITE_SELECTED_PROPERTY?: string;
 }
 
 interface ImportMeta {

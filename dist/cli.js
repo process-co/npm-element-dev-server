@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import{b as t}from"./chunk-QPYNK3X7.js";import{a as r}from"./chunk-JIIM2FST.js";import{render as p}from"ink";import c from"meow";import m from"path";import i from"fs";import{Fragment as f,jsx as o,jsxs as d}from"react/jsx-runtime";process.stdout.write("\x1Bc");var s=c(`
+import{b as t}from"./chunk-QPYNK3X7.js";import{a as r}from"./chunk-TP2HSEPI.js";import{render as p}from"ink";import c from"meow";import m from"path";import i from"fs";import{Fragment as f,jsx as o,jsxs as d}from"react/jsx-runtime";process.stdout.write("\x1Bc");var s=c(`
   Usage
     $ process-element [path]
 

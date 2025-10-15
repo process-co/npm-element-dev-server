@@ -291,21 +291,13 @@ export const DevUI = ({ rootDir }: { rootDir: string }) => {
       path.resolve(__dirname, '..', 'ui', 'src'),
     ];
     
-    console.log('🔍 Checking for local UI source...');
-    console.log('   process.cwd():', process.cwd());
-    console.log('   __dirname:', __dirname);
-    
     let hasLocalUISource = false;
     for (const uiPath of possibleUIPaths) {
-      console.log('   Checking path:', uiPath, 'exists:', fs.existsSync(uiPath));
       if (fs.existsSync(uiPath)) {
         hasLocalUISource = true;
-        console.log('   ✅ Found local UI source at:', uiPath);
         break;
       }
     }
-    
-    console.log('   hasLocalUISource:', hasLocalUISource);
     
     // Update state to show in banner
     setUsingLocalUI(hasLocalUISource);

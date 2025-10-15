@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ErrorBoundary } from 'react-error-boundary';
 
-
+// Import the CSS from @process.co/ui so it's available for all components
+import '@process.co/ui/styles';
+import './eds.css';
 
 // This will be dynamically loaded based on the selected element
 interface ElementComponent {
@@ -22,20 +25,39 @@ function DevServer() {
     setReadonly(!readonly);
   }
 
+  interface ImportMetaEnv {
+    // readonly VITE_ELEMENT?: string;
+    readonly VITE_ELEMENT_PATH?: string;
+    readonly VITE_ELEMENT_TYPE?: string;
+    readonly VITE_ELEMENT_NAME?: string;
+    readonly VITE_ACTION_SIGNAL_KEY?: string;
+    readonly VITE_PROPERTY_KEY?: string;
+    readonly VITE_PROPERTY_TYPE?: string;
+    readonly VITE_PROPERTY_UI_PATH?: string;
+    readonly VITE_MODULE_PATH?: string;
+    readonly VITE_UI_DIRECTORY?: string;
+    readonly VITE_ELEMENT_MODULE?: { actions: any[], signals: any[] };  
+    readonly VITE_CURRENT_ACTION_SIGNAL?: { ui: string };
+    readonly VITE_SELECTED_PROPERTY?: { propertyKey: string, type: string, uiPath: string, propertyData: any };
+  }
+  
+
   useEffect(() => {
     const loadElement = async () => {
       try {
 
+        const env = (import.meta as any).env as ImportMetaEnv;
+
         // Get element path and type from environment variables (passed by CLI)
-        const elementPath = import.meta.env.VITE_ELEMENT_PATH;
-        const elementType = import.meta.env.VITE_ELEMENT_TYPE || 'action';
-        const elementName = import.meta.env.VITE_ELEMENT_NAME;
-        const actionSignalKey = import.meta.env.VITE_ACTION_SIGNAL_KEY;
-        const propertyKey = import.meta.env.VITE_PROPERTY_KEY;
-        const propertyType = import.meta.env.VITE_PROPERTY_TYPE;
-        const propertyUIPath = import.meta.env.VITE_PROPERTY_UI_PATH;
-        const modulePath = import.meta.env.VITE_MODULE_PATH;
-        const uiDirectory = import.meta.env.VITE_UI_DIRECTORY;
+        const elementPath = env.VITE_ELEMENT_PATH;
+        const elementType = env.VITE_ELEMENT_TYPE || 'action';
+        const elementName = env.VITE_ELEMENT_NAME;
+        const actionSignalKey = env.VITE_ACTION_SIGNAL_KEY;
+        const propertyKey = env.VITE_PROPERTY_KEY;
+        const propertyType = env.VITE_PROPERTY_TYPE;
+        const propertyUIPath = env.VITE_PROPERTY_UI_PATH;
+        const modulePath = env.VITE_MODULE_PATH;
+        const uiDirectory = env.VITE_UI_DIRECTORY;
 
         // console.log('Element data:', { 
         //   elementPath, 
@@ -67,9 +89,9 @@ function DevServer() {
         // debugger;
 
         // Use the complete element data from the compatibility module passed via environment variables
-        const elementModule = import.meta.env.VITE_ELEMENT_MODULE || {};
-        const currentActionSignal = import.meta.env.VITE_CURRENT_ACTION_SIGNAL || {};
-        const selectedProperty = import.meta.env.VITE_SELECTED_PROPERTY || {};
+        const elementModule = env.VITE_ELEMENT_MODULE || {} as { actions: any[], signals: any[] };
+        const currentActionSignal = env.VITE_CURRENT_ACTION_SIGNAL || {} as { ui: string };
+        const selectedProperty = env.VITE_SELECTED_PROPERTY || {} as { propertyKey: string, type: string, uiPath: string, propertyData: any };
 
         // console.log('Element module from compatibility:', elementModule);
         // console.log('Current action/signal:', currentActionSignal);
@@ -234,22 +256,158 @@ function DevServer() {
         </button>
       </div>
       <div style={{ border: '2px solid #007acc', padding: '20px', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
-        {typeof ElementComponent === 'function' ? (
-          <ElementComponent
-            value={value}
-            onChange={(newValue: any) => setValue(newValue)}
-            onBlur={() => console.log('Component onBlur')}
-            readonly={readonly}
-          />
-        ) : React.isValidElement(ElementComponent) ? (
-          ElementComponent
-        ) : (
-          <div style={{ color: '#666', fontStyle: 'italic' }}>
-            Component is not a valid React component. Type: {typeof ElementComponent}
-            <br />
-            <small>This might be the element metadata instead of the UI component.</small>
+        <ErrorBoundary fallbackRender={({ error, resetErrorBoundary }) => (
+          <div style={{ 
+            border: '2px solid #dc2626', 
+            borderRadius: '8px', 
+            padding: '20px', 
+            margin: '10px 0',
+            backgroundColor: '#fef2f2',
+            fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+            fontSize: '14px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ 
+                fontSize: '20px', 
+                marginRight: '8px'
+              }}>💥</span>
+              <h3 style={{ 
+                margin: 0, 
+                color: '#dc2626', 
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                Component Error
+              </h3>
+            </div>
+            
+            <div style={{ 
+              backgroundColor: '#1f2937', 
+              color: '#f9fafb', 
+              padding: '16px', 
+              borderRadius: '4px', 
+              marginBottom: '16px',
+              overflow: 'auto',
+              maxHeight: '300px'
+            }}>
+              <div style={{ color: '#fca5a5', fontWeight: 'bold', marginBottom: '8px' }}>
+                {error.name}: {error.message}
+              </div>
+              {error.stack && (
+                <pre style={{ 
+                  margin: 0, 
+                  whiteSpace: 'pre-wrap', 
+                  fontSize: '12px',
+                  lineHeight: '1.4'
+                }}>
+                  {error.stack}
+                </pre>
+              )}
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 8px 0', color: '#374151', fontSize: '14px' }}>
+                Error Details:
+              </h4>
+              <div style={{ 
+                backgroundColor: '#f9fafb', 
+                padding: '12px', 
+                borderRadius: '4px',
+                fontSize: '12px'
+              }}>
+                <div><strong>Error Type:</strong> {error.name}</div>
+                <div><strong>Message:</strong> {error.message}</div>
+                {error.cause && <div><strong>Cause:</strong> {String(error.cause)}</div>}
+                <div><strong>Timestamp:</strong> {new Date().toISOString()}</div>
+              </div>
+            </div>
+            
+            <div style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              alignItems: 'center'
+            }}>
+              <button
+                onClick={resetErrorBoundary}
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+                onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#b91c1c'}
+                onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#dc2626'}
+              >
+                🔄 Try Again
+              </button>
+              
+              <button
+                onClick={() => {
+                  console.error('Component Error Details:', {
+                    error,
+                    stack: error.stack,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                  });
+                  alert('Error details logged to console');
+                }}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+                onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#4b5563'}
+                onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#6b7280'}
+              >
+                📋 Log to Console
+              </button>
+            </div>
+            
+            <div style={{ 
+              marginTop: '16px', 
+              padding: '12px', 
+              backgroundColor: '#eff6ff', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#1e40af'
+            }}>
+              <strong>💡 Debug Tips:</strong>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+                <li>Check the console for detailed error information</li>
+                <li>Verify all required props are being passed to the component</li>
+                <li>Check for undefined variables or missing imports</li>
+                <li>Use browser dev tools to inspect the component state</li>
+              </ul>
+            </div>
           </div>
-        )}
+        )}>   
+          {typeof ElementComponent === 'function' ? (
+            <ElementComponent
+              value={value}
+              onChange={(newValue: any) => setValue(newValue)}
+              onBlur={() => console.log('Component onBlur')}
+              readonly={readonly}
+            />
+          ) : React.isValidElement(ElementComponent) ? (
+            ElementComponent
+          ) : (
+            <div style={{ color: '#666', fontStyle: 'italic' }}>
+              Component is not a valid React component. Type: {typeof ElementComponent}
+              <br />
+              <small>This might be the element metadata instead of the UI component.</small>
+            </div>
+          )}
+        </ErrorBoundary>
       </div>
       <div style={{ marginBottom: '10px' }}>
         <h3>Value</h3>

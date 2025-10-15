@@ -15,7 +15,7 @@ const DEBUG = process.env.PROC_DEV_DEBUG === 'true';
 // Find the local @process.co/ui source for development (monorepo override)
 const localUISource = path.resolve(elementDevServerRoot, '..', 'ui', 'src');
 const localUIPackageRoot = path.resolve(elementDevServerRoot, '..', 'ui');
-const localUIBuiltCSS = path.resolve(localUIPackageRoot, 'dist', 'ui.css');
+const localUIBuiltCSS = path.resolve(localUIPackageRoot, 'css', 'ui.css');
 const hasLocalUISource = fs.existsSync(localUISource);
 if (DEBUG) {
   if (hasLocalUISource) {
