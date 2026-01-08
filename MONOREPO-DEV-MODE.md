@@ -2,7 +2,7 @@
 
 ## Overview
 
-The element-dev-server automatically detects when running in the monorepo and overrides the published `@process.co/ui` npm package with the local source code for hot reloading during development.
+The element-dev-server automatically detects when running in the monorepo and overrides the published `@process.co/ui` and `@process.co/utilities` npm packages with the local source code for hot reloading during development.
 
 ## How It Works
 
@@ -17,29 +17,39 @@ When you launch the dev server from within the monorepo, it will:
 
 ### What Gets Overridden
 
-All imports of `@process.co/ui` in your external element projects (like `process-partners/process-internal`) will be redirected to:
+All imports of `@process.co/ui` and `@process.co/utilities` in your external element projects (like `process-partners/process-internal`) will be redirected to local sources:
 
+**@process.co/ui:**
 ```
 /Users/.../proc-app/process-co/ui/src
+```
+
+**@process.co/utilities:**
+```
+/Users/.../proc-app/process-co/utilities/src
 ```
 
 Instead of:
 ```
 node_modules/@process.co/ui
+node_modules/@process.co/utilities
 ```
 
 ### Console Output
 
-When you start the dev server, you'll see:
+When you start the dev server with `PROC_DEV_DEBUG=true`, you'll see:
 
 ```bash
 🎨 Using local @process.co/ui source from monorepo: /path/to/proc-app/process-co/ui/src
+🔧 Using local @process.co/utilities source from monorepo: /path/to/proc-app/process-co/utilities/src
 🔍 Setting up file watching for @process.co/ui source: /path/to/proc-app/process-co/ui/src
+🔍 Setting up file watching for @process.co/utilities source: /path/to/proc-app/process-co/utilities/src
 ```
 
-If the local source isn't found:
+If the local sources aren't found:
 ```bash
 📦 Using published @process.co/ui from npm
+📦 Using published @process.co/utilities from npm
 ```
 
 ## Benefits
@@ -72,15 +82,17 @@ Normal mode (without the flag) shows only essential messages:
 
 ### Example Scenario
 
-You're developing `process-internal` element which uses `@process.co/ui`:
+You're developing `process-internal` element which uses `@process.co/ui` and `@process.co/utilities`:
 
 ```tsx
 // In process-partners/process-internal/actions/something/index.tsx
 import { Button } from '@process.co/ui';
+import { newId } from '@process.co/utilities';
 import '@process.co/ui/styles';
 
 export default function MyAction() {
-  return <Button>Click me</Button>;
+  const id = newId();
+  return <Button>Click me ({id})</Button>;
 }
 ```
 
@@ -88,8 +100,8 @@ export default function MyAction() {
 
 1. Start the dev server: `proc-dev /path/to/process-partners/process-internal`
 2. The server detects it's in the monorepo
-3. All `@process.co/ui` imports use the local source
-4. Edit `/proc-app/process-co/ui/src/components/ui/button.tsx`
+3. All `@process.co/ui` and `@process.co/utilities` imports use the local sources
+4. Edit `/proc-app/process-co/ui/src/components/ui/button.tsx` or `/proc-app/process-co/utilities/src/index.ts`
 5. Browser automatically updates with your changes! 🎉
 
 ## CSS Handling
@@ -116,7 +128,8 @@ The CSS is imported globally and styles all components on the page, including re
 ```javascript
 alias: {
   '@process.co/ui': '/path/to/monorepo/process-co/ui/src',
-  '@process.co/ui/styles': '/path/to/monorepo/process-co/ui/dist/ui.css'
+  '@process.co/ui/styles': '/path/to/monorepo/process-co/ui/css/ui.css',
+  '@process.co/utilities': '/path/to/monorepo/process-co/utilities/src'
 }
 ```
 
@@ -128,7 +141,7 @@ The plugin intelligently resolves the `@` alias based on context:
 
 ### File Watching
 
-The dev server watches the entire `process-co/ui/src` directory for changes and triggers HMR when files are modified.
+The dev server watches the entire `process-co/ui/src` and `process-co/utilities/src` directories for changes and triggers HMR when files are modified.
 
 ### Optimization
 

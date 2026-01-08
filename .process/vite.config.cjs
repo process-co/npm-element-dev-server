@@ -28,6 +28,18 @@ if (DEBUG) {
   }
 }
 
+// Find the local @process.co/utilities source for development (monorepo override)
+const localUtilitiesSource = path.resolve(elementDevServerRoot, '..', 'utilities', 'src');
+const hasLocalUtilitiesSource = fs.existsSync(localUtilitiesSource);
+if (DEBUG) {
+  if (hasLocalUtilitiesSource) {
+    console.log('🔧 Using local @process.co/utilities source from monorepo');
+    console.log('   Source:', localUtilitiesSource);
+  } else {
+    console.log('📦 Using published @process.co/utilities from npm');
+  }
+}
+
 // Function to find node_modules that contains our dependencies
 function findNodeModulesWithDeps() {
   const possiblePaths = [
@@ -314,6 +326,29 @@ plugins.push({
             }
           });
         }
+        
+        // Also watch the local @process.co/utilities source for hot reloading
+        if (hasLocalUtilitiesSource) {
+          if (DEBUG) console.log(`🔍 Setting up file watching for @process.co/utilities source: ${localUtilitiesSource}`);
+          server.watcher.add(localUtilitiesSource);
+          
+          server.watcher.on('change', (file) => {
+            if (file.startsWith(localUtilitiesSource)) {
+              if (DEBUG) console.log(`🔧 @process.co/utilities source file changed: ${file}`);
+              
+              // Trigger HMR
+              const module = server.moduleGraph.getModuleById(file);
+              if (module) {
+                server.moduleGraph.invalidateModule(module);
+              }
+              
+              server.ws.send({
+                type: 'full-reload',
+                path: '*'
+              });
+            }
+          });
+        }
       },
 
       resolveId(source, importer) {
@@ -449,7 +484,9 @@ module.exports = defineConfig({
         // Allow the user's element directory
         ...(elementPath ? [elementPath, path.dirname(elementPath)] : []),
         // Allow the local @process.co/ui source for hot reloading
-        ...(hasLocalUISource ? [localUISource, path.dirname(localUISource)] : [])
+        ...(hasLocalUISource ? [localUISource, path.dirname(localUISource)] : []),
+        // Allow the local @process.co/utilities source for hot reloading
+        ...(hasLocalUtilitiesSource ? [localUtilitiesSource, path.dirname(localUtilitiesSource)] : [])
       ]
     },
     watch: {
@@ -471,9 +508,14 @@ module.exports = defineConfig({
       // Override @process.co/ui with local monorepo source in dev mode
       // ORDER MATTERS: More specific paths must come BEFORE more general ones!
       ...(hasLocalUISource && {
-        // Put /styles FIRST so it matches before the general @process.co/ui
+        // Put subpath exports FIRST so they match before the general @process.co/ui
         '@process.co/ui/styles': localUIBuiltCSS,
+        '@process.co/ui/fields': path.join(localUISource, 'components', 'fields'),
         '@process.co/ui': localUISource
+      }),
+      // Override @process.co/utilities with local monorepo source in dev mode
+      ...(hasLocalUtilitiesSource && {
+        '@process.co/utilities': localUtilitiesSource
       }),
       // Dynamically map element paths based on the elementPath from CLI
       ...(elementPath && {
@@ -493,10 +535,11 @@ module.exports = defineConfig({
   // Tell Vite where to find dependencies - use the discovered node_modules
   cacheDir: path.join(depsNodeModules, '.vite'),
   optimizeDeps: {
-    include: ['react', 'react-dom', 'clsx', 'tailwind-merge', 'zustand', '@monaco-editor/react', '@fortawesome/react-fontawesome', '@fortawesome/pro-regular-svg-icons', '@fortawesome/pro-solid-svg-icons', '@fortawesome/pro-duotone-svg-icons', '@fortawesome/pro-light-svg-icons', '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-separator', '@radix-ui/react-tooltip', '@radix-ui/react-popover', '@radix-ui/react-accordion', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-slider', '@radix-ui/react-switch'],
-    // Exclude local UI source and external elements from optimization for hot reloading
+    include: ['react', 'react-dom', 'clsx', 'tailwind-merge', 'zustand', 'uuid', '@monaco-editor/react', '@fortawesome/react-fontawesome', '@fortawesome/pro-regular-svg-icons', '@fortawesome/pro-solid-svg-icons', '@fortawesome/pro-duotone-svg-icons', '@fortawesome/pro-light-svg-icons', '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-separator', '@radix-ui/react-tooltip', '@radix-ui/react-popover', '@radix-ui/react-accordion', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-slider', '@radix-ui/react-switch'],
+    // Exclude local UI source, utilities source, and external elements from optimization for hot reloading
     exclude: [
       ...(hasLocalUISource ? ['@process.co/ui'] : []),
+      ...(hasLocalUtilitiesSource ? ['@process.co/utilities'] : []),
       ...(elementPath ? [elementPath] : [])
     ],
     // Force Vite to look in element-dev-server's node_modules for these deps

@@ -14,10 +14,12 @@ When developers install `@process.co/element-dev-server`, all the UI library dep
 pnpm add @process.co/element-dev-server
 # This automatically includes:
 # - @process.co/ui
+# - @process.co/utilities
 # - All @radix-ui/* components
 # - @fortawesome/react-fontawesome
 # - @monaco-editor/react
 # - zustand
+# - uuid
 # - etc.
 ```
 
