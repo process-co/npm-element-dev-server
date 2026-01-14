@@ -511,6 +511,7 @@ module.exports = defineConfig({
         // Put subpath exports FIRST so they match before the general @process.co/ui
         '@process.co/ui/styles': localUIBuiltCSS,
         '@process.co/ui/fields': path.join(localUISource, 'components', 'fields'),
+        '@process.co/ui/dev': path.join(localUISource, 'components', 'dev'),
         '@process.co/ui': localUISource
       }),
       // Override @process.co/utilities with local monorepo source in dev mode

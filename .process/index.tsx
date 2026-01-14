@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
+import { DevProvider, DevToolbar } from '@process.co/ui/dev';
+import { Button } from '@process.co/ui';
 
 // Import the CSS from @process.co/ui so it's available for all components
 import '@process.co/ui/styles';
@@ -12,6 +14,9 @@ interface ElementComponent {
   [key: string]: any;
 }
 
+// Storage key for persisting component value
+const VALUE_STORAGE_KEY = 'process-dev:component-value';
+
 function DevServer() {
   const [ElementComponent, setElementComponent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +24,28 @@ function DevServer() {
 
 
   const [readonly, setReadonly] = useState(false);
-  const [value, setValue] = useState<any>({});
+
+  // Persist value to localStorage for stable IDs across reloads
+  const [value, setValue] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem(VALUE_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('Failed to load value from localStorage:', e);
+    }
+    return {};
+  });
+
+  // Save value to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(VALUE_STORAGE_KEY, JSON.stringify(value));
+    } catch (e) {
+      console.warn('Failed to save value to localStorage:', e);
+    }
+  }, [value]);
 
   const handleReadonly = () => {
     setReadonly(!readonly);
@@ -36,11 +62,11 @@ function DevServer() {
     readonly VITE_PROPERTY_UI_PATH?: string;
     readonly VITE_MODULE_PATH?: string;
     readonly VITE_UI_DIRECTORY?: string;
-    readonly VITE_ELEMENT_MODULE?: { actions: any[], signals: any[] };  
+    readonly VITE_ELEMENT_MODULE?: { actions: any[], signals: any[] };
     readonly VITE_CURRENT_ACTION_SIGNAL?: { ui: string };
     readonly VITE_SELECTED_PROPERTY?: { propertyKey: string, type: string, uiPath: string, propertyData: any };
   }
-  
+
 
   useEffect(() => {
     const loadElement = async () => {
@@ -248,188 +274,210 @@ function DevServer() {
       <h2>Element Development Server</h2>
 
       <h3>Rendered Component</h3>
-      <div style={{ marginBottom: '10px' }}>
-        <button
+      <div style={{ marginBottom: '10px', display: 'flex', gap: '8px' }}>
+        <Button variant="outline"
+          size="sm"
           onClick={handleReadonly}
         >
           {readonly ? 'Make Editable' : 'Make Read Only'}
-        </button>
+        </Button>
+        {/* <Button
+          onClick={() => {
+            if (confirm('Clear component value? This will reset all data and IDs.')) {
+              setValue({});
+              localStorage.removeItem(VALUE_STORAGE_KEY);
+            }
+          }}
+          style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}
+        >
+          Clear Value
+        </Button> */}
       </div>
-      <div style={{ border: '2px solid #007acc', padding: '20px', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
-        <ErrorBoundary fallbackRender={({ error, resetErrorBoundary }) => (
-          <div style={{ 
-            border: '2px solid #dc2626', 
-            borderRadius: '8px', 
-            padding: '20px', 
-            margin: '10px 0',
-            backgroundColor: '#fef2f2',
-            fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-            fontSize: '14px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ 
-                fontSize: '20px', 
-                marginRight: '8px'
-              }}>💥</span>
-              <h3 style={{ 
-                margin: 0, 
-                color: '#dc2626', 
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }}>
-                Component Error
-              </h3>
-            </div>
-            
-            <div style={{ 
-              backgroundColor: '#1f2937', 
-              color: '#f9fafb', 
-              padding: '16px', 
-              borderRadius: '4px', 
-              marginBottom: '16px',
-              overflow: 'auto',
-              maxHeight: '300px'
+      <DevProvider storageKey="process-dev" >
+        <div style={{ border: '2px solid #007acc', padding: '20px', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
+
+          <ErrorBoundary fallbackRender={({ error, resetErrorBoundary }) => (
+
+
+            <div style={{
+              border: '2px solid #dc2626',
+              borderRadius: '8px',
+              padding: '20px',
+              margin: '10px 0',
+              backgroundColor: '#fef2f2',
+              fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+              fontSize: '14px'
             }}>
-              <div style={{ color: '#fca5a5', fontWeight: 'bold', marginBottom: '8px' }}>
-                {error.name}: {error.message}
-              </div>
-              {error.stack && (
-                <pre style={{ 
-                  margin: 0, 
-                  whiteSpace: 'pre-wrap', 
-                  fontSize: '12px',
-                  lineHeight: '1.4'
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{
+                  fontSize: '20px',
+                  marginRight: '8px'
+                }}>💥</span>
+                <h3 style={{
+                  margin: 0,
+                  color: '#dc2626',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
                 }}>
-                  {error.stack}
-                </pre>
-              )}
-            </div>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ margin: '0 0 8px 0', color: '#374151', fontSize: '14px' }}>
-                Error Details:
-              </h4>
-              <div style={{ 
-                backgroundColor: '#f9fafb', 
-                padding: '12px', 
+                  Component Error
+                </h3>
+              </div>
+
+              <div style={{
+                backgroundColor: '#1f2937',
+                color: '#f9fafb',
+                padding: '16px',
                 borderRadius: '4px',
-                fontSize: '12px'
+                marginBottom: '16px',
+                overflow: 'auto',
+                maxHeight: '300px'
               }}>
-                <div><strong>Error Type:</strong> {error.name}</div>
-                <div><strong>Message:</strong> {error.message}</div>
-                {error.cause && <div><strong>Cause:</strong> {String(error.cause)}</div>}
-                <div><strong>Timestamp:</strong> {new Date().toISOString()}</div>
+                <div style={{ color: '#fca5a5', fontWeight: 'bold', marginBottom: '8px' }}>
+                  {error.name}: {error.message}
+                </div>
+                {error.stack && (
+                  <pre style={{
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '12px',
+                    lineHeight: '1.4'
+                  }}>
+                    {error.stack}
+                  </pre>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#374151', fontSize: '14px' }}>
+                  Error Details:
+                </h4>
+                <div style={{
+                  backgroundColor: '#f9fafb',
+                  padding: '12px',
+                  borderRadius: '4px',
+                  fontSize: '12px'
+                }}>
+                  <div><strong>Error Type:</strong> {error.name}</div>
+                  <div><strong>Message:</strong> {error.message}</div>
+                  {error.cause && <div><strong>Cause:</strong> {String(error.cause)}</div>}
+                  <div><strong>Timestamp:</strong> {new Date().toISOString()}</div>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center'
+              }}>
+                <button
+                  onClick={resetErrorBoundary}
+                  style={{
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#b91c1c'}
+                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#dc2626'}
+                >
+                  🔄 Try Again
+                </button>
+
+                <button
+                  onClick={() => {
+                    console.error('Component Error Details:', {
+                      error,
+                      stack: error.stack,
+                      timestamp: new Date().toISOString(),
+                      userAgent: navigator.userAgent,
+                      url: window.location.href
+                    });
+                    alert('Error details logged to console');
+                  }}
+                  style={{
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#4b5563'}
+                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#6b7280'}
+                >
+                  📋 Log to Console
+                </button>
+              </div>
+
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#eff6ff',
+                borderRadius: '4px',
+                fontSize: '12px',
+                color: '#1e40af'
+              }}>
+                <strong>💡 Debug Tips:</strong>
+                <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+                  <li>Check the console for detailed error information</li>
+                  <li>Verify all required props are being passed to the component</li>
+                  <li>Check for undefined variables or missing imports</li>
+                  <li>Use browser dev tools to inspect the component state</li>
+                </ul>
               </div>
             </div>
-            
-            <div style={{ 
-              display: 'flex', 
-              gap: '12px', 
-              alignItems: 'center'
-            }}>
-              <button
-                onClick={resetErrorBoundary}
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-                onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#b91c1c'}
-                onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#dc2626'}
-              >
-                🔄 Try Again
-              </button>
-              
-              <button
-                onClick={() => {
-                  console.error('Component Error Details:', {
-                    error,
-                    stack: error.stack,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    url: window.location.href
-                  });
-                  alert('Error details logged to console');
-                }}
-                style={{
-                  backgroundColor: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-                onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#4b5563'}
-                onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#6b7280'}
-              >
-                📋 Log to Console
-              </button>
-            </div>
-            
-            <div style={{ 
-              marginTop: '16px', 
-              padding: '12px', 
-              backgroundColor: '#eff6ff', 
-              borderRadius: '4px',
-              fontSize: '12px',
-              color: '#1e40af'
-            }}>
-              <strong>💡 Debug Tips:</strong>
-              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-                <li>Check the console for detailed error information</li>
-                <li>Verify all required props are being passed to the component</li>
-                <li>Check for undefined variables or missing imports</li>
-                <li>Use browser dev tools to inspect the component state</li>
-              </ul>
-            </div>
-          </div>
-        )}>   
-          {typeof ElementComponent === 'function' ? (
-            <ElementComponent
-              value={value}
-              onChange={(newValue: any) => setValue(newValue)}
-              onBlur={() => console.log('Component onBlur')}
-              readonly={readonly}
-            />
-          ) : React.isValidElement(ElementComponent) ? (
-            ElementComponent
-          ) : (
-            <div style={{ color: '#666', fontStyle: 'italic' }}>
-              Component is not a valid React component. Type: {typeof ElementComponent}
-              <br />
-              <small>This might be the element metadata instead of the UI component.</small>
-            </div>
-          )}
-        </ErrorBoundary>
-      </div>
-      <div style={{ marginBottom: '10px' }}>
-        <h3>Value</h3>
-        <pre style={{ backgroundColor: '#f5f5f5', padding: '10px', overflow: 'auto' }}>
-          {JSON.stringify(value, null, 2)}
-        </pre>
-      </div>
-      <div style={{ border: '1px solid #ccc', padding: '20px', marginTop: '20px', marginBottom: '20px', backgroundColor: '#f8f9fa' }}>
-        <h3>Loaded Component Information</h3>
-        <p><strong>Element:</strong> {import.meta.env.VITE_ELEMENT_NAME}</p>
-        <p><strong>Type:</strong> {import.meta.env.VITE_ELEMENT_TYPE}</p>
-        <p><strong>Action/Signal:</strong> {import.meta.env.VITE_ACTION_SIGNAL_KEY}</p>
-        <p><strong>Module Path:</strong> {import.meta.env.VITE_ELEMENT_PATH}</p>
-        <p><strong>UI Directory:</strong> {import.meta.env.VITE_UI_DIRECTORY || 'Not available'}</p>
+          )}>
+            {typeof ElementComponent === 'function' ? (
+              <ElementComponent
+                fieldName="devField"
+                fieldId="dev-field-1"
+                value={value}
+                onChange={(newValue: any) => setValue(newValue)}
+                onBlur={() => console.log('Component onBlur')}
+                readonly={readonly}
+              />
+            ) : (
+              <div style={{ color: '#666', fontStyle: 'italic' }}>
+                Component is not a valid React component. Type: {typeof ElementComponent}
+                <br />
+                <small>This might be the element metadata instead of the UI component.</small>
+              </div>
+            )}
+          </ErrorBoundary>
+        </div>
+        {/* <div style={{ marginBottom: '10px' }}>
+          <h3>Value</h3>
+          <pre style={{ backgroundColor: '#f5f5f5', padding: '10px', overflow: 'auto' }}>
+            {JSON.stringify(value, null, 2)}
+          </pre>
+        </div> */}
+        <div style={{ marginTop: '10px' }}>
+          <DevToolbar />
+        </div>
 
-        <h3>Component Details</h3>
-        <pre style={{ backgroundColor: '#f5f5f5', padding: '10px', overflow: 'auto' }}>
-          {JSON.stringify(ElementComponent, null, 2)}
-        </pre>
+        <div style={{ border: '1px solid #ccc', padding: '20px', marginTop: '20px', marginBottom: '20px', backgroundColor: '#f8f9fa' }}>
+          <h3>Loaded Component Information</h3>
+          <p><strong>Element:</strong> {import.meta.env.VITE_ELEMENT_NAME}</p>
+          <p><strong>Type:</strong> {import.meta.env.VITE_ELEMENT_TYPE}</p>
+          <p><strong>Action/Signal:</strong> {import.meta.env.VITE_ACTION_SIGNAL_KEY}</p>
+          <p><strong>Module Path:</strong> {import.meta.env.VITE_ELEMENT_PATH}</p>
+          <p><strong>UI Directory:</strong> {import.meta.env.VITE_UI_DIRECTORY || 'Not available'}</p>
 
-      </div>
-    </div>
+          <h3>Component Details</h3>
+          <pre style={{ backgroundColor: '#f5f5f5', padding: '10px', overflow: 'auto' }}>
+            {JSON.stringify(ElementComponent, null, 2)}
+          </pre>
+
+        </div>
+      </DevProvider>
+
+    </div >
   );
 }
 
