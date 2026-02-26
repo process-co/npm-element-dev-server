@@ -22,6 +22,10 @@
     "registry": "https://registry.npmjs.org",
     "scope": "@process.co"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/process-co/npm-element-dev-server.git"
+  },
   "release": {
     "branches": [
       "main"
