@@ -11,6 +11,10 @@ on:
         type: string
         default: 'https://registry.npmjs.org'
 
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
