@@ -58,6 +58,34 @@ jobs:
           jq --arg reg "$REGISTRY" '.publishConfig.registry = $reg | .registry = $reg' package.json > package.json.tmp && mv package.json.tmp package.json
           jq '.publishConfig.access = "public"' package.json > package.json.tmp && mv package.json.tmp package.json
 
+      - name: Replace workspace refs in package.json
+        run: |
+          node -e "
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const sections = ['dependencies', 'devDependencies'];
+          for (const section of sections) {
+            if (!pkg[section]) continue;
+            const next = {};
+            for (const [name, value] of Object.entries(pkg[section])) {
+              if (typeof value !== 'string' || !value.startsWith('workspace:')) {
+                next[name] = value;
+                continue;
+              }
+              try {
+                const ver = execSync('npm view ' + name + ' version', { encoding: 'utf-8' }).trim();
+                next[name] = '^' + ver;
+                console.log('Replaced ' + name + ' with ^' + ver);
+              } catch (e) {
+                console.log('Removing ' + name + ' (not published to registry)');
+              }
+            }
+            pkg[section] = next;
+          }
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
       - name: Verify package structure
         run: |
           echo "Checking package structure..."
