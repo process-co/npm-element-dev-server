@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+declare module '*.css' {
+  const url: string;
+  export default url;
+}
+
 interface ImportMetaEnv {
   // readonly VITE_ELEMENT?: string;
   readonly VITE_ELEMENT_PATH?: string;
