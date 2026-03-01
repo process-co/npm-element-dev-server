@@ -19,10 +19,9 @@ const VALUE_STORAGE_KEY = 'process-dev:component-value';
 
 function DevServer() {
   const [ElementComponent, setElementComponent] = useState<any>(null);
+  const [elementDefinition, setElementDefinition] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-
   const [readonly, setReadonly] = useState(false);
 
   // Persist value to localStorage for stable IDs across reloads
@@ -226,8 +225,10 @@ function DevServer() {
 
         if (component) {
           setElementComponent(() => component);
+          setElementDefinition(action ?? signal ?? null);
         } else {
           setError(`No ${elementType} component found in ${elementName}`);
+          setElementDefinition(null);
         }
       } catch (err) {
         console.error('Error loading element:', err);
@@ -293,7 +294,7 @@ function DevServer() {
           Clear Value
         </Button> */}
       </div>
-      <DevProvider storageKey="process-dev" >
+      <DevProvider storageKey="process-dev" elementDefinition={elementDefinition} >
         <div style={{ border: '2px solid #007acc', padding: '20px', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
 
           <ErrorBoundary fallbackRender={({ error, resetErrorBoundary }) => (
